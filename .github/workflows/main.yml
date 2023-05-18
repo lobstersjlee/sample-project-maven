@@ -1,0 +1,51 @@
+name: Synopsys Security Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  
+env:
+  DETECT_PROJECT_NAME: sjlee-GH-mini
+  DETECT_PROJECT_VERSION_NAME: main
+  DETECT_TOOLS: DETECTOR
+  DETECT_TIMEOUT: 3000
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: install dependency
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+      - run: npm install --no-audit --no-fund --silent
+      
+      - name: Black Duck (Rapid scan)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: synopsys-sig/synopsys-action@v1.2.0
+        env:
+          DETECT_BLACKDUCK_RAPID_COMPARE_MODE: BOM_COMPARE_STRICT
+        with:
+          blackduck_scan_full: false
+          blackduck_automation_prcomment: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          blackduck_url: ${{ secrets.BLACKDUCK_URL }}
+          blackduck_apiToken: ${{ secrets.BLACKDUCK_API_TOKEN }}
+
+      - name: Black Duck (Full scan)
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: synopsys-sig/synopsys-action@v1.2.0
+        with:
+          blackduck_scan_full: true
+          blackduck_scan_failure_severities: "ALL"
+          
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          blackduck_url: ${{ secrets.BLACKDUCK_URL }}
+          blackduck_apiToken: ${{ secrets.BLACKDUCK_API_TOKEN }}
+          
